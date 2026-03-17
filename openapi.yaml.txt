@@ -1,0 +1,491 @@
+   1 openapi: 3.1.0
+   2 info:
+   3  title: Api
+   4  version: 0.1.0
+   5  description: Daily Workflow Tracker API
+   6 servers:
+   7  - url: /api
+   8    description: Base API path
+   9 tags:
+  10  - name: health
+  11    description: Health operations
+  12  - name: auth
+  13    description: Authentication operations
+  14  - name: users
+  15    description: User management
+  16  - name: worklog
+  17    description: Work log entries
+  18  - name: calls
+  19    description: Call tracking
+  20 paths:
+  21  /healthz:
+  22    get:
+  23      operationId: healthCheck
+  24      tags: [health]
+  25      summary: Health check
+  26      responses:
+  27        "200":
+  28          description: Healthy
+  29          content:
+  30            application/json:
+  31              schema:
+  32                $ref: "#/components/schemas/HealthStatus"
+  33
+  34  /auth/login:
+  35    post:
+  36      operationId: login
+  37      tags: [auth]
+  38      summary: Login with username and password
+  39      requestBody:
+  40        required: true
+  41        content:
+  42          application/json:
+  43            schema:
+  44              $ref: "#/components/schemas/LoginRequest"
+  45      responses:
+  46        "200":
+  47          description: Login successful
+  48          content:
+  49            application/json:
+  50              schema:
+  51                $ref: "#/components/schemas/LoginResponse"
+  52        "401":
+  53          description: Invalid credentials
+  54          content:
+  55            application/json:
+  56              schema:
+  57                $ref: "#/components/schemas/ErrorResponse"
+  58
+  59  /auth/logout:
+  60    post:
+  61      operationId: logout
+  62      tags: [auth]
+  63      summary: Logout
+  64      responses:
+  65        "200":
+  66          description: Logged out
+  67          content:
+  68            application/json:
+  69              schema:
+  70                $ref: "#/components/schemas/MessageResponse"
+  71
+  72  /auth/me:
+  73    get:
+  74      operationId: getCurrentUser
+  75      tags: [auth]
+  76      summary: Get current user
+  77      responses:
+  78        "200":
+  79          description: Current user info
+  80          content:
+  81            application/json:
+  82              schema:
+  83                $ref: "#/components/schemas/User"
+  84        "401":
+  85          description: Not authenticated
+  86          content:
+  87            application/json:
+  88              schema:
+  89                $ref: "#/components/schemas/ErrorResponse"
+  90
+  91  /auth/change-password:
+  92    post:
+  93      operationId: changePassword
+  94      tags: [auth]
+  95      summary: Change own password
+  96      requestBody:
+  97        required: true
+  98        content:
+  99          application/json:
+ 100            schema:
+ 101              $ref: "#/components/schemas/ChangePasswordRequest"
+ 102      responses:
+ 103        "200":
+ 104          description: Password changed
+ 105          content:
+ 106            application/json:
+ 107              schema:
+ 108                $ref: "#/components/schemas/MessageResponse"
+ 109        "400":
+ 110          description: Invalid request
+ 111          content:
+ 112            application/json:
+ 113              schema:
+ 114                $ref: "#/components/schemas/ErrorResponse"
+ 115
+ 116  /users:
+ 117    get:
+ 118      operationId: listUsers
+ 119      tags: [users]
+ 120      summary: List all users (admin only)
+ 121      responses:
+ 122        "200":
+ 123          description: List of users
+ 124          content:
+ 125            application/json:
+ 126              schema:
+ 127                type: array
+ 128                items:
+ 129                  $ref: "#/components/schemas/User"
+ 130    post:
+ 131      operationId: createUser
+ 132      tags: [users]
+ 133      summary: Create a new user (admin only)
+ 134      requestBody:
+ 135        required: true
+ 136        content:
+ 137          application/json:
+ 138            schema:
+ 139              $ref: "#/components/schemas/CreateUserRequest"
+ 140      responses:
+ 141        "201":
+ 142          description: User created
+ 143          content:
+ 144            application/json:
+ 145              schema:
+ 146                $ref: "#/components/schemas/User"
+ 147        "400":
+ 148          description: Invalid request
+ 149          content:
+ 150            application/json:
+ 151              schema:
+ 152                $ref: "#/components/schemas/ErrorResponse"
+ 153
+ 154  /users/{userId}:
+ 155    delete:
+ 156      operationId: deleteUser
+ 157      tags: [users]
+ 158      summary: Delete a user (admin only)
+ 159      parameters:
+ 160        - name: userId
+ 161          in: path
+ 162          required: true
+ 163          schema:
+ 164            type: integer
+ 165      responses:
+ 166        "200":
+ 167          description: User deleted
+ 168          content:
+ 169            application/json:
+ 170              schema:
+ 171                $ref: "#/components/schemas/MessageResponse"
+ 172
+ 173  /users/{userId}/calls-enabled:
+ 174    patch:
+ 175      operationId: toggleCallsEnabled
+ 176      tags: [users]
+ 177      summary: Enable or disable calls feature for a user (admin only)
+ 178      parameters:
+ 179        - name: userId
+ 180          in: path
+ 181          required: true
+ 182          schema:
+ 183            type: integer
+ 184      requestBody:
+ 185        required: true
+ 186        content:
+ 187          application/json:
+ 188            schema:
+ 189              $ref: "#/components/schemas/ToggleCallsRequest"
+ 190      responses:
+ 191        "200":
+ 192          description: Updated
+ 193          content:
+ 194            application/json:
+ 195              schema:
+ 196                $ref: "#/components/schemas/User"
+ 197
+ 198  /worklog:
+ 199    get:
+ 200      operationId: listWorkLogs
+ 201      tags: [worklog]
+ 202      summary: List work log entries for the current user
+ 203      parameters:
+ 204        - name: startDate
+ 205          in: query
+ 206          required: false
+ 207          schema:
+ 208            type: string
+ 209            format: date
+ 210        - name: endDate
+ 211          in: query
+ 212          required: false
+ 213          schema:
+ 214            type: string
+ 215            format: date
+ 216      responses:
+ 217        "200":
+ 218          description: Work log entries
+ 219          content:
+ 220            application/json:
+ 221              schema:
+ 222                type: array
+ 223                items:
+ 224                  $ref: "#/components/schemas/WorkLog"
+ 225
+ 226  /worklog/today:
+ 227    get:
+ 228      operationId: getTodayWorkLog
+ 229      tags: [worklog]
+ 230      summary: Get all of today's work log entries
+ 231      responses:
+ 232        "200":
+ 233          description: Today's work logs
+ 234          content:
+ 235            application/json:
+ 236              schema:
+ 237                type: array
+ 238                items:
+ 239                  $ref: "#/components/schemas/WorkLog"
+ 240
+ 241  /worklog/new:
+ 242    post:
+ 243      operationId: createWorkLog
+ 244      tags: [worklog]
+ 245      summary: Create a new work log entry with auto date and clock-in time
+ 246      responses:
+ 247        "201":
+ 248          description: Created work log
+ 249          content:
+ 250            application/json:
+ 251              schema:
+ 252                $ref: "#/components/schemas/WorkLog"
+ 253
+ 254  /worklog/{id}:
+ 255    patch:
+ 256      operationId: updateWorkLog
+ 257      tags: [worklog]
+ 258      summary: Update a work log entry
+ 259      parameters:
+ 260        - name: id
+ 261          in: path
+ 262          required: true
+ 263          schema:
+ 264            type: integer
+ 265      requestBody:
+ 266        required: true
+ 267        content:
+ 268          application/json:
+ 269            schema:
+ 270              $ref: "#/components/schemas/UpdateWorkLogRequest"
+ 271      responses:
+ 272        "200":
+ 273          description: Updated work log
+ 274          content:
+ 275            application/json:
+ 276              schema:
+ 277                $ref: "#/components/schemas/WorkLog"
+ 278
+ 279  /calls/today:
+ 280    get:
+ 281      operationId: getTodayCalls
+ 282      tags: [calls]
+ 283      summary: Get today's call checkboxes state
+ 284      responses:
+ 285        "200":
+ 286          description: Call state
+ 287          content:
+ 288            application/json:
+ 289              schema:
+ 290                $ref: "#/components/schemas/CallState"
+ 291    patch:
+ 292      operationId: updateTodayCalls
+ 293      tags: [calls]
+ 294      summary: Update today's call checkboxes
+ 295      requestBody:
+ 296        required: true
+ 297        content:
+ 298          application/json:
+ 299            schema:
+ 300              $ref: "#/components/schemas/UpdateCallStateRequest"
+ 301      responses:
+ 302        "200":
+ 303          description: Updated call state
+ 304          content:
+ 305            application/json:
+ 306              schema:
+ 307                $ref: "#/components/schemas/CallState"
+ 308
+ 309  /calls/save-to-table:
+ 310    post:
+ 311      operationId: saveCallsToTable
+ 312      tags: [calls]
+ 313      summary: Save current call count to today's work log
+ 314      responses:
+ 315        "200":
+ 316          description: Saved
+ 317          content:
+ 318            application/json:
+ 319              schema:
+ 320                $ref: "#/components/schemas/WorkLog"
+ 321
+ 322 components:
+ 323  schemas:
+ 324    HealthStatus:
+ 325      type: object
+ 326      properties:
+ 327        status:
+ 328          type: string
+ 329      required: [status]
+ 330
+ 331    ErrorResponse:
+ 332      type: object
+ 333      properties:
+ 334        error:
+ 335          type: string
+ 336      required: [error]
+ 337
+ 338    MessageResponse:
+ 339      type: object
+ 340      properties:
+ 341        message:
+ 342          type: string
+ 343      required: [message]
+ 344
+ 345    LoginRequest:
+ 346      type: object
+ 347      properties:
+ 348        username:
+ 349          type: string
+ 350        password:
+ 351          type: string
+ 352      required: [username, password]
+ 353
+ 354    LoginResponse:
+ 355      type: object
+ 356      properties:
+ 357        user:
+ 358          $ref: "#/components/schemas/User"
+ 359        message:
+ 360          type: string
+ 361      required: [user, message]
+ 362
+ 363    ChangePasswordRequest:
+ 364      type: object
+ 365      properties:
+ 366        currentPassword:
+ 367          type: string
+ 368        newPassword:
+ 369          type: string
+ 370      required: [currentPassword, newPassword]
+ 371
+ 372    User:
+ 373      type: object
+ 374      properties:
+ 375        id:
+ 376          type: integer
+ 377        username:
+ 378          type: string
+ 379        isAdmin:
+ 380          type: boolean
+ 381        callsEnabled:
+ 382          type: boolean
+ 383        createdAt:
+ 384          type: string
+ 385          format: date-time
+ 386      required: [id, username, isAdmin, callsEnabled, createdAt]
+ 387
+ 388    CreateUserRequest:
+ 389      type: object
+ 390      properties:
+ 391        username:
+ 392          type: string
+ 393        password:
+ 394          type: string
+ 395        isAdmin:
+ 396          type: boolean
+ 397      required: [username, password]
+ 398
+ 399    ToggleCallsRequest:
+ 400      type: object
+ 401      properties:
+ 402        enabled:
+ 403          type: boolean
+ 404      required: [enabled]
+ 405
+ 406    WorkLog:
+ 407      type: object
+ 408      properties:
+ 409        id:
+ 410          type: integer
+ 411        userId:
+ 412          type: integer
+ 413        date:
+ 414          type: string
+ 415          format: date
+ 416        clockInTime:
+ 417          type: string
+ 418          nullable: true
+ 419        clockOutTime:
+ 420          type: string
+ 421          nullable: true
+ 422        workSentViaEmail:
+ 423          type: boolean
+ 424        workGivenViaPhone:
+ 425          type: boolean
+ 426        workDescription:
+ 427          type: string
+ 428          nullable: true
+ 429        emailSent:
+ 430          type: string
+ 431          nullable: true
+ 432        numberOfCalls:
+ 433          type: integer
+ 434          nullable: true
+ 435        createdAt:
+ 436          type: string
+ 437          format: date-time
+ 438        updatedAt:
+ 439          type: string
+ 440          format: date-time
+ 441      required: [id, userId, date, workSentViaEmail, workGivenViaPhone, createdAt, updatedAt]
+ 442
+ 443    UpdateWorkLogRequest:
+ 444      type: object
+ 445      properties:
+ 446        clockInTime:
+ 447          type: string
+ 448          nullable: true
+ 449        clockOutTime:
+ 450          type: string
+ 451          nullable: true
+ 452        workSentViaEmail:
+ 453          type: boolean
+ 454        workGivenViaPhone:
+ 455          type: boolean
+ 456        workDescription:
+ 457          type: string
+ 458          nullable: true
+ 459        emailSent:
+ 460          type: string
+ 461          nullable: true
+ 462
+ 463    CallState:
+ 464      type: object
+ 465      properties:
+ 466        id:
+ 467          type: integer
+ 468        userId:
+ 469          type: integer
+ 470        date:
+ 471          type: string
+ 472          format: date
+ 473        checkedBoxes:
+ 474          type: array
+ 475          items:
+ 476            type: integer
+ 477        totalChecked:
+ 478          type: integer
+ 479        savedToTable:
+ 480          type: boolean
+ 481      required: [id, userId, date, checkedBoxes, totalChecked, savedToTable]
+ 482
+ 483    UpdateCallStateRequest:
+ 484      type: object
+ 485      properties:
+ 486        checkedBoxes:
+ 487          type: array
+ 488          items:
+ 489            type: integer
+ 490      required: [checkedBoxes]
+ 491
